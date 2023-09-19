@@ -31,6 +31,7 @@ func main() {
 	defer func() { _ = conn.Close() }()
 
 	time.Sleep(time.Second)
+	// 发送json编码后的DefaultOption到server
 	_ = json.NewEncoder(conn).Encode(geerpc.DefaultOption)
 	cc := coder.NewGobCoder(conn)
 	// send and receive
@@ -39,9 +40,12 @@ func main() {
 			ServiceMethod: "Foo.Sum",
 			Seq:           uint64(i),
 		}
+		// 发送header和body
 		_ = cc.Write(h, fmt.Sprintf("geerpc req %d", h.Seq))
+		// 读取header
 		_ = cc.ReadHeader(h)
 		var reply string
+		// 读取body
 		_ = cc.ReadBody(&reply)
 		log.Println("reply:", reply)
 	}
