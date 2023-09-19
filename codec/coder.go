@@ -1,4 +1,4 @@
-package codec
+package coder
 
 import "io"
 
@@ -8,14 +8,15 @@ type Header struct {
 	Error         string
 }
 
-type Codec interface {
+// Coder 编码器接口
+type Coder interface {
 	io.Closer
 	ReadHeader(*Header) error
 	ReadBody(interface{}) error
 	Write(*Header, interface{}) error
 }
 
-type NewCodecFunc func(closer io.ReadWriteCloser) Codec
+type NewCoderFunc func(closer io.ReadWriteCloser) Coder
 
 type Type string
 
@@ -24,9 +25,9 @@ const (
 	JsonType Type = "application/json"
 )
 
-var NewCodeFuncMap map[Type]NewCodecFunc
+var NewCoderFuncMap map[Type]NewCoderFunc
 
 func init() {
-	NewCodeFuncMap = make(map[Type]NewCodecFunc)
-	NewCodeFuncMap[GobType] = NewGobCodec
+	NewCoderFuncMap = make(map[Type]NewCoderFunc)
+	NewCoderFuncMap[GobType] = NewGobCoder
 }

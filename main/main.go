@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"geerpc"
-	"geerpc/codec"
+	coder "geerpc/codec"
 	"log"
 	"net"
 	"time"
@@ -32,10 +32,10 @@ func main() {
 
 	time.Sleep(time.Second)
 	_ = json.NewEncoder(conn).Encode(geerpc.DefaultOption)
-	cc := codec.NewGobCodec(conn)
+	cc := coder.NewGobCoder(conn)
 	// send and receive
 	for i := 0; i < 5; i++ {
-		h := &codec.Header{
+		h := &coder.Header{
 			ServiceMethod: "Foo.Sum",
 			Seq:           uint64(i),
 		}

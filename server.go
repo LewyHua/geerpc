@@ -3,7 +3,7 @@ package geerpc
 import (
 	"encoding/json"
 	"fmt"
-	"geerpc/codec"
+	coder "geerpc/codec"
 	"io"
 	"log"
 	"net"
@@ -15,12 +15,12 @@ const MagicNUmber = 0x3bef5c
 
 type Option struct {
 	MagicNumber int
-	CodeType    codec.Type
+	CodeType    coder.Type
 }
 
 var DefaultOption = &Option{
 	MagicNumber: MagicNUmber,
-	CodeType:    codec.GobType,
+	CodeType:    coder.GobType,
 }
 
 // Server RPC Server
@@ -50,6 +50,7 @@ func (s *Server) Accept(listener net.Listener) {
 func (s *Server) ServeConn(conn net.Conn) {
 	defer func() { _ = conn.Close() }()
 	var opt Option
+	// 解码conn里面json的Option
 	if err := json.NewDecoder(conn).Decode(&opt); err != nil {
 		log.Println("RPC server: decode options err:", err)
 		return
@@ -60,36 +61,36 @@ func (s *Server) ServeConn(conn net.Conn) {
 		return
 	}
 
-	f, ok := codec.NewCodeFuncMap[opt.CodeType]
+	// the NewGobCoder
+	coderFunc, ok := coder.NewCoderFuncMap[opt.CodeType]
 	if !ok {
 		log.Println("RPC server: invalid code type:", opt.CodeType)
 		return
 	}
-
-	s.serveCodec(f(conn))
+	s.serveCoder(coderFunc(conn))
 }
 
 // invalidRequest the placeholder in response when err occurred
 var invalidRequest = struct{}{}
 
-func (s *Server) serveCodec(cc codec.Codec) {
+func (s *Server) serveCoder(coder coder.Coder) {
 	sending := new(sync.Mutex) // make sure to send a complete response
 	wg := new(sync.WaitGroup)
 	for {
-		req, err := s.readRequest(cc)
+		req, err := s.readRequest(coder)
 		if err != nil {
 			if req == nil {
 				break
 			}
 			req.header.Error = err.Error()
-			s.sendResponse(cc, req.header, invalidRequest, sending)
+			s.sendResponse(coder, req.header, invalidRequest, sending)
 			continue
 		}
 		wg.Add(1)
-		go s.handleRequest(cc, req, sending, wg)
+		go s.handleRequest(coder, req, sending, wg)
 	}
 	wg.Wait()
-	_ = cc.Close()
+	_ = coder.Close()
 
 }
 
@@ -99,13 +100,13 @@ func Accept(listener net.Listener) {
 }
 
 type request struct {
-	header *codec.Header // header of request
+	header *coder.Header // header of request
 	argv   reflect.Value // argv of request
 	replyv reflect.Value // replyv of request
 }
 
-func (s *Server) readRequestHeader(cc codec.Codec) (*codec.Header, error) {
-	var header codec.Header
+func (s *Server) readRequestHeader(cc coder.Coder) (*coder.Header, error) {
+	var header coder.Header
 	if err := cc.ReadHeader(&header); err != nil {
 		if err != io.EOF && err != io.ErrUnexpectedEOF {
 			log.Println("RPC server: read header err:", err)
@@ -115,7 +116,7 @@ func (s *Server) readRequestHeader(cc codec.Codec) (*codec.Header, error) {
 	return &header, nil
 }
 
-func (s *Server) readRequest(cc codec.Codec) (*request, error) {
+func (s *Server) readRequest(cc coder.Coder) (*request, error) {
 	header, err := s.readRequestHeader(cc)
 	if err != nil {
 		return nil, err
@@ -131,7 +132,7 @@ func (s *Server) readRequest(cc codec.Codec) (*request, error) {
 
 }
 
-func (s *Server) sendResponse(cc codec.Codec, header *codec.Header, body interface{}, sending *sync.Mutex) {
+func (s *Server) sendResponse(cc coder.Coder, header *coder.Header, body interface{}, sending *sync.Mutex) {
 	sending.Lock()
 	defer sending.Unlock()
 	if err := cc.Write(header, body); err != nil {
@@ -139,7 +140,7 @@ func (s *Server) sendResponse(cc codec.Codec, header *codec.Header, body interfa
 	}
 }
 
-func (s *Server) handleRequest(cc codec.Codec, req *request, sending *sync.Mutex, wg *sync.WaitGroup) {
+func (s *Server) handleRequest(cc coder.Coder, req *request, sending *sync.Mutex, wg *sync.WaitGroup) {
 	// TODO: should call registered rpc methods to get the right replyv
 	// just print argv and send hello for now
 	defer wg.Done()

@@ -1,4 +1,4 @@
-package codec
+package coder
 
 import (
 	"bufio"
@@ -7,18 +7,19 @@ import (
 	"log"
 )
 
-type GobCodec struct {
+type GobCoder struct {
 	conn io.ReadWriteCloser
 	buf  *bufio.Writer
 	dec  *gob.Decoder
 	enc  *gob.Encoder
 }
 
-var _ Codec = (*GobCodec)(nil)
+var _ = (*GobCoder)(nil)
 
-func NewGobCodec(conn io.ReadWriteCloser) Codec {
+// NewGobCoder 把conn包装成一个coder
+func NewGobCoder(conn io.ReadWriteCloser) Coder {
 	buf := bufio.NewWriter(conn) // 往conn写数据的buffer
-	return &GobCodec{
+	return &GobCoder{
 		conn: conn,                 // 连接
 		buf:  buf,                  // buffer
 		dec:  gob.NewDecoder(conn), // 解码器，从conn获取数据
@@ -26,15 +27,22 @@ func NewGobCodec(conn io.ReadWriteCloser) Codec {
 	}
 }
 
-func (c *GobCodec) ReadHeader(h *Header) error {
+func (c *GobCoder) Close() error {
+	return c.conn.Close()
+}
+
+// ReadHeader 读取数据存在Header中
+func (c *GobCoder) ReadHeader(h *Header) error {
 	return c.dec.Decode(h)
 }
 
-func (c *GobCodec) ReadBody(body interface{}) error {
+// ReadBody 读取数据存在Body中
+func (c *GobCoder) ReadBody(body interface{}) error {
 	return c.dec.Decode(body)
 }
 
-func (c *GobCodec) Write(h *Header, body interface{}) (err error) {
+// 编码Header和Body，写到buf中，把buf中的数据发送到conn里
+func (c *GobCoder) Write(h *Header, body interface{}) (err error) {
 	// 把buf writer 中的数据从conn发送到出去
 	defer func() {
 		_ = c.buf.Flush()
@@ -46,21 +54,17 @@ func (c *GobCodec) Write(h *Header, body interface{}) (err error) {
 	// 编码header，保存在conn的buf writer
 	err = c.enc.Encode(h)
 	if err != nil {
-		log.Println("RPC codec: gob encoding header err:", err)
+		log.Println("RPC coder: gob encoding header err:", err)
 		return err
 	}
 
 	// 编码body，保存在conn的buf writer
 	err = c.enc.Encode(body)
 	if err != nil {
-		log.Println("RPC codec: gob encoding header err:", err)
+		log.Println("RPC coder: gob encoding header err:", err)
 		return err
 	}
 
 	return nil
 
-}
-
-func (c *GobCodec) Close() error {
-	return c.conn.Close()
 }
