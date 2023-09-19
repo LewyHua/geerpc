@@ -87,6 +87,7 @@ func (s *Server) serveCoder(cc coder.Coder) {
 			}
 			// body读取失败，发送错误
 			req.header.Error = err.Error()
+			// 返回响应必须是逐个发送的，用mutex来约束
 			s.sendResponse(cc, req.header, invalidRequest, sending)
 			continue
 		}
@@ -121,6 +122,8 @@ func (s *Server) readRequestHeader(cc coder.Coder) (*coder.Header, error) {
 	return &header, nil
 }
 
+// Read Request Format:
+// | Option | Header1 | Body1 | Header2 | Body2 | ...
 func (s *Server) readRequest(cc coder.Coder) (*request, error) {
 	header, err := s.readRequestHeader(cc)
 	if err != nil {
@@ -138,6 +141,7 @@ func (s *Server) readRequest(cc coder.Coder) (*request, error) {
 }
 
 func (s *Server) sendResponse(cc coder.Coder, header *coder.Header, body interface{}, sending *sync.Mutex) {
+	// 同时有响应err和正确的方法call，所以需要轮流发，一面消息粘在一起
 	sending.Lock()
 	defer sending.Unlock()
 	if err := cc.Write(header, body); err != nil {
