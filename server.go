@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	coder "geerpc/codec"
+	coder "geerpc/coder"
 	"io"
 	"log"
 	"net"
@@ -16,12 +16,12 @@ const MagicNUmber = 0x3bef5c
 
 type Option struct {
 	MagicNumber int
-	CodeType    coder.Type
+	CoderType   coder.Type
 }
 
 var DefaultOption = &Option{
 	MagicNumber: MagicNUmber,
-	CodeType:    coder.GobType,
+	CoderType:   coder.GobType,
 }
 
 // Server RPC Server
@@ -63,9 +63,9 @@ func (s *Server) ServeConn(conn net.Conn) {
 	}
 
 	// the NewGobCoder
-	coderFunc, ok := coder.NewCoderFuncMap[opt.CodeType]
+	coderFunc, ok := coder.NewCoderFuncMap[opt.CoderType]
 	if !ok {
-		log.Println("RPC server: invalid code type:", opt.CodeType)
+		log.Println("RPC server: invalid code type:", opt.CoderType)
 		return
 	}
 	s.serveCoder(coderFunc(conn))

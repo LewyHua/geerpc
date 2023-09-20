@@ -1,12 +1,12 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"geerpc"
-	coder "geerpc/codec"
+	"geerpc/client"
 	"log"
 	"net"
+	"sync"
 	"time"
 )
 
@@ -25,28 +25,25 @@ func startServer(addr chan string) {
 func main() {
 	addr := make(chan string)
 	go startServer(addr)
-
-	// client
-	conn, _ := net.Dial("tcp", <-addr)
-	defer func() { _ = conn.Close() }()
+	// 开启了一个go协程调用receive 从client.cc.conn等待接收响应
+	client, _ := client.Dial("tcp", <-addr)
+	defer func() { _ = client.Close() }()
 
 	time.Sleep(time.Second)
-	// 发送json编码后的DefaultOption到server
-	_ = json.NewEncoder(conn).Encode(geerpc.DefaultOption)
-	cc := coder.NewGobCoder(conn)
-	// send and receive
+	// send request & receive response
+	var wg sync.WaitGroup
 	for i := 0; i < 5; i++ {
-		h := &coder.Header{
-			ServiceMethod: "Foo.Sum",
-			Seq:           uint64(i),
-		}
-		// 发送header和body
-		_ = cc.Write(h, fmt.Sprintf("geerpc req %d", h.Seq))
-		// 读取header
-		_ = cc.ReadHeader(h)
-		var reply string
-		// 读取body
-		_ = cc.ReadBody(&reply)
-		log.Println("reply:", reply)
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			args := fmt.Sprintf("geerpc req %d", i)
+			var reply string
+			// 往 从client.cc.conn 发送请求
+			if err := client.Call("Foo.Sum", args, &reply); err != nil {
+				log.Fatal("call Foo.Sum error:", err)
+			}
+			log.Println("reply:", reply)
+		}(i)
 	}
+	wg.Wait()
 }
