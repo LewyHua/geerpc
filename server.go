@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	coder "geerpc/coder"
+	"geerpc/coder"
 	"io"
 	"log"
 	"net"
@@ -25,7 +25,9 @@ var DefaultOption = &Option{
 }
 
 // Server RPC Server
-type Server struct{}
+type Server struct {
+	serviceMap sync.Map // map[string]*service
+}
 
 // NewServer returns a new RPC Server
 func NewServer() *Server {
@@ -34,6 +36,14 @@ func NewServer() *Server {
 
 // DefaultServer default RPC server instance
 var DefaultServer = NewServer()
+
+func (s *Server) Register(receiver interface{}) error {
+	svc := NewService(receiver)
+	if _, dup := s.serviceMap.LoadOrStore(svc.name, svc); dup {
+		return errors.New("rpc: service already defined: " + svc.name)
+	}
+	return nil
+}
 
 // Accept accepts connections of the listener and serve it
 func (s *Server) Accept(listener net.Listener) {

@@ -1,11 +1,10 @@
-package client
+package geerpc
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"geerpc"
-	coder "geerpc/coder"
+	"geerpc/coder"
 	"log"
 	"net"
 	"sync"
@@ -32,7 +31,7 @@ func (c *Call) done() {
 // Client represents an RPC Client
 type Client struct {
 	cc       coder.Coder      // 用于发送请求
-	opt      *geerpc.Option   // 选项
+	opt      *Option          // 选项
 	sending  sync.Mutex       // protect following
 	header   coder.Header     // 请求的header
 	mu       sync.Mutex       // protect following
@@ -113,7 +112,7 @@ func (c *Client) receive() {
 		if err = c.cc.ReadHeader(&h); err != nil {
 			break
 		}
-		// 移除call 为什么要移除call呢？ 因为call已经完成了
+		// 服务端已经处理完成，客户端接收到了header就可以删除call了
 		call := c.removeCall(h.Seq)
 		switch {
 		case call == nil: // call 不存在，可能是请求没有发送完整，或者因为其他原因被取消，但是服务端仍旧处理了
@@ -134,7 +133,7 @@ func (c *Client) receive() {
 	c.terminateCalls(err)
 }
 
-func NewClient(conn net.Conn, opt *geerpc.Option) (*Client, error) {
+func NewClient(conn net.Conn, opt *Option) (*Client, error) {
 	coderFunc := coder.NewCoderFuncMap[opt.CoderType]
 	// coder不存在
 	if coderFunc == nil {
@@ -149,11 +148,12 @@ func NewClient(conn net.Conn, opt *geerpc.Option) (*Client, error) {
 		_ = conn.Close()
 		return nil, err
 	}
-
-	return newClientCoder(coderFunc(conn), opt), nil
+	// coderFunc 是一个NewCoderFunc的实例。调用它就返回一个Coder
+	cc := coderFunc(conn)
+	return newClientCoder(cc, opt), nil
 }
 
-func newClientCoder(cc coder.Coder, opt *geerpc.Option) *Client {
+func newClientCoder(cc coder.Coder, opt *Option) *Client {
 	client := &Client{
 		seq:     1,                      // seq 从 1 开始，0 表示无效的 Call
 		cc:      cc,                     // 用于发送请求
@@ -166,23 +166,23 @@ func newClientCoder(cc coder.Coder, opt *geerpc.Option) *Client {
 }
 
 // Go invokes the function asynchronously
-func parseOptions(opts ...*geerpc.Option) (*geerpc.Option, error) {
+func parseOptions(opts ...*Option) (*Option, error) {
 	if len(opts) == 0 || opts[0] == nil {
-		return geerpc.DefaultOption, nil
+		return DefaultOption, nil
 	}
 	if len(opts) != 1 {
 		return nil, errors.New("number of options is more than 1")
 	}
 	opt := opts[0]
-	opt.MagicNumber = geerpc.DefaultOption.MagicNumber
+	opt.MagicNumber = DefaultOption.MagicNumber
 	if opt.CoderType == "" {
-		opt.CoderType = geerpc.DefaultOption.CoderType
+		opt.CoderType = DefaultOption.CoderType
 	}
 	return opt, nil
 }
 
 // Dial connects to an RPC server at the specified network address
-func Dial(network, address string, opts ...*geerpc.Option) (client *Client, err error) {
+func Dial(network, address string, opts ...*Option) (client *Client, err error) {
 	opt, err := parseOptions(opts...)
 	if err != nil {
 		return nil, err
