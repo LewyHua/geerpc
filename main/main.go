@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"geerpc"
-	"geerpc/client"
 	"log"
 	"net"
 	"sync"
@@ -26,7 +25,7 @@ func main() {
 	addr := make(chan string)
 	go startServer(addr)
 	// 开启了一个go协程调用receive 从client.cc.conn等待接收响应
-	client, _ := client.Dial("tcp", <-addr)
+	client, _ := geerpc.Dial("tcp", <-addr)
 	defer func() { _ = client.Close() }()
 
 	time.Sleep(time.Second)
