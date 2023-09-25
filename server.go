@@ -51,7 +51,7 @@ func (s *Server) Accept(listener net.Listener) {
 func (s *Server) ServeConn(conn net.Conn) {
 	defer func() { _ = conn.Close() }()
 	var opt Option
-	// 解码conn里面json的Option
+	// 解码conn里面json的Optgiion
 	if err := json.NewDecoder(conn).Decode(&opt); err != nil {
 		log.Println("RPC server: decode options err:", err)
 		return
