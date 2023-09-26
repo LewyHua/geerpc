@@ -3,6 +3,7 @@ package geerpc
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -40,4 +41,10 @@ func TestName(t *testing.T) {
 	fmt.Println(reflect.Indirect(valueT).Type())
 	fmt.Println(reflect.Indirect(valueT).Type().Name())
 	fmt.Println("=====")
+}
+
+func TestDot(t *testing.T) {
+	serviceMethod := "Test.GrowUp"
+	index := strings.LastIndex(serviceMethod, ".")
+	fmt.Println(index)
 }
