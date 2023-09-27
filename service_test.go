@@ -2,8 +2,6 @@ package geerpc
 
 import (
 	"fmt"
-	"log"
-	"net"
 	"reflect"
 	"testing"
 )
@@ -50,19 +48,25 @@ func TestMethodType_Call(t *testing.T) {
 	_assert(err == nil && *replyv.Interface().(*int) == 4 && mType.NumCalls() == 1, "failed to call Foo.Sum")
 }
 
-func startServer(addr chan string) {
-	var foo Foo
-	if err := Register(&foo); err != nil {
-		fmt.Println("register failed")
-	}
-	// pick a free port
-	listener, err := net.Listen("tcp", ":0")
-	if err != nil {
-		fmt.Println("network error:", err)
-		return
-	}
-	// notify
-	log.Println("start rpc server on", listener.Addr())
-	addr <- listener.Addr().String()
-	Accept(listener)
-}
+//func startServer(addr chan string) {
+//	//var foo Foo
+//	//if err := Register(&foo); err != nil {
+//	//	fmt.Println("register failed")
+//	//}
+//	//// pick a free port
+//	//listener, err := net.Listen("tcp", ":0")
+//	//if err != nil {
+//	//	fmt.Println("network error:", err)
+//	//	return
+//	//}
+//	//// notify
+//	//log.Println("start rpc server on", listener.Addr())
+//	//addr <- listener.Addr().String()
+//	//Accept(listener)
+//	var b Bar
+//	_ = Register(&b)
+//	// pick a free port
+//	l, _ := net.Listen("tcp", ":0")
+//	addr <- l.Addr().String()
+//	Accept(l)
+//}

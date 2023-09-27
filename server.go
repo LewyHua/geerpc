@@ -10,18 +10,22 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"time"
 )
 
 const MagicNUmber = 0x3bef5c
 
 type Option struct {
-	MagicNumber int
-	CoderType   coder.Type
+	MagicNumber    int
+	CoderType      coder.Type
+	ConnectTimeout time.Duration // 0 means no limit
+	HandleTimeout  time.Duration
 }
 
 var DefaultOption = &Option{
-	MagicNumber: MagicNUmber,
-	CoderType:   coder.GobType,
+	MagicNumber:    MagicNUmber,
+	CoderType:      coder.GobType,
+	ConnectTimeout: time.Second * 10,
 }
 
 // Server RPC Server
@@ -107,13 +111,13 @@ func (s *Server) ServeConn(conn net.Conn) {
 		log.Println("RPC server: invalid code type:", opt.CoderType)
 		return
 	}
-	s.serveCoder(coderFunc(conn))
+	s.serveCoder(coderFunc(conn), &opt)
 }
 
 // invalidRequest the placeholder in response when err occurred
 var invalidRequest = struct{}{}
 
-func (s *Server) serveCoder(cc coder.Coder) {
+func (s *Server) serveCoder(cc coder.Coder, opt *Option) {
 	sending := new(sync.Mutex) // make sure to send a complete response
 	wg := new(sync.WaitGroup)
 	for {
@@ -131,7 +135,7 @@ func (s *Server) serveCoder(cc coder.Coder) {
 			continue
 		}
 		wg.Add(1)
-		go s.handleRequest(cc, req, sending, wg)
+		go s.handleRequest(cc, req, sending, wg, opt.HandleTimeout)
 	}
 	wg.Wait()
 	_ = cc.Close()
@@ -199,14 +203,37 @@ func (s *Server) sendResponse(cc coder.Coder, header *coder.Header, body interfa
 	}
 }
 
-func (s *Server) handleRequest(cc coder.Coder, req *request, sending *sync.Mutex, wg *sync.WaitGroup) {
-	// just print argv and send hello for now
+func (s *Server) handleRequest(cc coder.Coder, req *request, sending *sync.Mutex, wg *sync.WaitGroup, timeout time.Duration) {
 	defer wg.Done()
-	err := req.svc.call(req.mType, req.argv, req.replyv)
-	if err != nil {
-		req.header.Error = err.Error()
-		s.sendResponse(cc, req.header, invalidRequest, sending)
+	called := make(chan struct{})
+	sent := make(chan struct{})
+	go func() {
+		err := req.svc.call(req.mType, req.argv, req.replyv)
+		called <- struct{}{}
+		if err != nil {
+			req.header.Error = err.Error()
+			s.sendResponse(cc, req.header, invalidRequest, sending)
+			sent <- struct{}{}
+			return
+		}
+		s.sendResponse(cc, req.header, req.replyv.Interface(), sending)
+		sent <- struct{}{}
+	}()
+
+	// 如果没有设置超时，那么就直接返回
+	if timeout == 0 {
+		<-called
+		<-sent
 		return
 	}
-	s.sendResponse(cc, req.header, req.replyv.Interface(), sending)
+
+	select {
+	// timeout结束，call还没有接收到数据，直接sendResponse
+	case <-time.After(timeout):
+		req.header.Error = "rpc server: handle request timeout"
+		s.sendResponse(cc, req.header, invalidRequest, sending)
+	// call接收到数据，说明已经发送了，直接返回
+	case <-called:
+		<-sent
+	}
 }
