@@ -13,7 +13,9 @@ import (
 	"time"
 )
 
-const MagicNUmber = 0x3bef5c
+const (
+	MagicNUmber = 0x3bef5c
+)
 
 type Option struct {
 	MagicNumber    int
