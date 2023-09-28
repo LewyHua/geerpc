@@ -277,8 +277,9 @@ func (c *Client) Go(serviceMethod string, args, reply interface{}, done chan *Ca
 
 // Call invokes the named function, waits for it to complete, and returns its error status
 func (c *Client) Call(ctx context.Context, serviceMethod string, args, reply interface{}) error {
-	// 生成call
+	// 生成call，注册call，并且异步发送call
 	call := c.Go(serviceMethod, args, reply, make(chan *Call, 1))
+	// 等待call完成
 	select {
 	// ctx.Done()返回的是一个channel，如果这个channel被关闭了，那么就会执行case <-ctx.Done()
 	case <-ctx.Done():

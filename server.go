@@ -119,6 +119,7 @@ func (s *Server) ServeConn(conn net.Conn) {
 // invalidRequest the placeholder in response when err occurred
 var invalidRequest = struct{}{}
 
+// serveCoder serve the coder
 func (s *Server) serveCoder(cc coder.Coder, opt *Option) {
 	sending := new(sync.Mutex) // make sure to send a complete response
 	wg := new(sync.WaitGroup)
