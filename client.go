@@ -289,7 +289,6 @@ func (c *Client) Call(ctx context.Context, serviceMethod string, args, reply int
 	case call := <-call.Done:
 		return call.Error
 	}
-
 }
 
 // 流程图
