@@ -53,8 +53,9 @@ type service struct {
 
 func NewService(receiver interface{}) *service {
 	s := new(service)
+	// 获取结构体接口的值
 	s.receiver = reflect.ValueOf(receiver)
-	// 获取结构体的名字
+	// 获取结构体指针指向的结构体的类型，再获得结构体的名字
 	s.name = reflect.Indirect(s.receiver).Type().Name()
 	s.typ = reflect.TypeOf(receiver)
 	if !ast.IsExported(s.name) {
