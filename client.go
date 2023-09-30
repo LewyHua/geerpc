@@ -321,11 +321,11 @@ func XDial(rpcAddr string, opts ...*Option) (*Client, error) {
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("rpc client: invalid format %s", rpcAddr)
 	}
-	protocol, addr := parts[0], parts[1]
-	switch protocol {
+	network, addr := parts[0], parts[1]
+	switch network {
 	case "http":
 		return DialHTTP("tcp", addr, opts...)
 	default:
-		return Dial(protocol, addr, opts...)
+		return Dial(network, addr, opts...)
 	}
 }
