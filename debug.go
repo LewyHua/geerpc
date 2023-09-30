@@ -17,7 +17,7 @@ const debugText = `<html>
 		<th align=center>Method</th><th align=center>Calls</th>
 		{{range $name, $mtype := .Method}}
 			<tr>
-			<td align=left font=fixed>{{$name}}({{$mtype.ArgType}}, {{$mtype.ReplyType}}) error</td>
+			<td align=left font=fixed>{{$name}}({{$mtype.ArgvType}}, {{$mtype.ReplyType}}) error</td>
 			<td align=center>{{$mtype.NumCalls}}</td>
 			</tr>
 		{{end}}

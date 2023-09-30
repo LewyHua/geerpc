@@ -1,5 +1,5 @@
 # geerpc
-基于Golang实现的简易版RPC框架
+基于Golang实现的简易版RPC框架，项目参考geektutu的<a href="https://geektutu.com/post/geerpc.html">gee-rpc</a>。
 
 ## 项目架构
 1. <a href="https://github.com/LewyHua/geerpc/blob/main/doc/%E6%9C%8D%E5%8A%A1%E7%AB%AF%E7%BC%96%E8%A7%A3%E7%A0%81.md">服务器编解码</a>
