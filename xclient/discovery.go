@@ -2,6 +2,7 @@ package xclient
 
 import (
 	"errors"
+	"math"
 	"math/rand"
 	"sync"
 	"time"
@@ -34,7 +35,8 @@ func NewMultiServerDiscovery(servers []string) *MultiServerDiscovery {
 		r:       rand.New(rand.NewSource(time.Now().UnixNano())),
 		servers: servers,
 	}
-	d.index = d.r.Intn(len(servers))
+	// =
+	d.index = d.r.Intn(math.MaxInt32 - 1)
 	return d
 }
 
