@@ -8,4 +8,4 @@
 4. <a href="https://github.com/LewyHua/geerpc/blob/main/doc/%E8%B6%85%E6%97%B6%E5%A4%84%E7%90%86.md">超时处理</a>
 5. <a href="https://github.com/LewyHua/geerpc/blob/main/doc/HTTP%E6%94%AF%E6%8C%81.md">支持HTTP</a>
 6. <a href="https://github.com/LewyHua/geerpc/blob/main/doc/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.md">负载均衡</a>
-7. <a href="https://github.com/LewyHua/geerpc/blob/main/doc/%E6%9C%8D%E5%8A%A1%E6%B3%A8%E5%86%8C%E4%B8%8E%E5%8F%91%E7%8E%B0.md">服务发现与注册中心</a>
+7. <a href="https://github.com/LewyHua/geerpc/blob/main/doc/%E6%9C%8D%E5%8A%A1%E5%8F%91%E7%8E%B0%E4%B8%8E%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83.md">服务发现与注册中心</a>
