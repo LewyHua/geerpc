@@ -14,7 +14,7 @@ type GobCoder struct {
 	enc  *gob.Encoder
 }
 
-var _ = (*GobCoder)(nil)
+var _ Coder = (*GobCoder)(nil)
 
 // NewGobCoder 把conn包装成一个coder
 func NewGobCoder(conn io.ReadWriteCloser) Coder {

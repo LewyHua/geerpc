@@ -212,6 +212,7 @@ func (s *Server) handleRequest(cc coder.Coder, req *request, sending *sync.Mutex
 	sent := make(chan struct{})
 	go func() {
 		err := req.svc.call(req.mType, req.argv, req.replyv)
+
 		called <- struct{}{}
 		if err != nil {
 			req.header.Error = err.Error()
